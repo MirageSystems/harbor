@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Builds
+dist/
+build/
+.next/
+out/
+artifacts/
+cache/
+typechain-types/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.key
+deployments/local/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Test & coverage
+coverage/
+.nyc_output/
