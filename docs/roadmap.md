@@ -77,6 +77,14 @@ Turn the prototype into a believable pilot using the DIFC/DevRel ecosystem intro
 
 ---
 
+## North Star
+
+> **Harbor turns real trade receivables into a yield pool that closes the $2 trillion gap** — institutional and DeFi capital funding real-world trade, where each SME's settlement history becomes portable, undercollateralized credit.
+
+*Also on the horizon (post-Demo-Day — not the build list): negotiable eBL, multi-currency/AED settlement, a white-label rail for banks, Shariah-compliant (Murabaha/Wakala) structures, Digital Dirham/CBDC settlement, live port/IoT oracles, AI underwriting, and parametric trade insurance.*
+
+---
+
 ## Risk watch
 
 | Risk | Mitigation |

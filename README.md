@@ -53,6 +53,87 @@ Regulatory clarity + real demand + a dense, addressable trade hub. The infrastru
 - **Delivery signal:** simulated oracle for the MVP → real DP World / customs / inspection feeds in V2
 - **Frontend:** Next.js
 
+## Technical preview
+
+> Illustrative sketches, not the final API — they show the *shape* of V1.
+
+### Smart contracts
+
+Two contracts, both built on OpenZeppelin. The escrow holds the buyer's USDC and, on confirmed delivery, atomically pays the seller and mints a receivable.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+contract HarborLC {
+    enum Status { Opened, Delivered, Settled, Cancelled }
+
+    struct LC {
+        address buyer;
+        address seller;
+        uint256 amount;    // USDC (6 decimals)
+        address oracle;    // confirms delivery (MVP: a signed attestor)
+        Status  status;
+    }
+
+    IERC20      public immutable usdc;
+    IReceivable public immutable receivable;
+    mapping(uint256 => LC) public lcs;
+    uint256 public nextId;
+
+    // Buyer opens an LC and locks funds into escrow
+    function openLC(address seller, uint256 amount, address oracle)
+        external returns (uint256 id);
+
+    // Oracle/attestor confirms goods delivered  ->  Status.Delivered
+    function confirmDelivery(uint256 id) external;
+
+    // Pay seller + mint receivable, atomically  ->  Status.Settled
+    function settle(uint256 id) external;
+}
+```
+
+```solidity
+// The paid invoice, as an on-chain asset (ERC-721). V3: collateral for the financing pool.
+contract HarborReceivable is ERC721 {
+    function mint(address seller, uint256 lcId, uint256 amount) external onlyLC;
+}
+```
+
+### Frontend
+
+Next.js + an embedded email wallet (Privy / thirdweb), so there's no seed phrase and no gas prompt. One screen, two roles, and the split-screen that wins the demo:
+
+```
+┌──────────────────────────────┬──────────────────────────────┐
+│  TRADITIONAL LC              │  HARBOR                       │
+│                              │                               │
+│  Day 1   Documents couriered │  Buyer  · Lock 50,000 USDC ✓ │
+│  Day 4   Bank review…        │  Seller · Mark delivered   ✓ │
+│  Day 7   Discrepancy! ✗      │  Contract verifies………………✓ │
+│  Day 10  …still waiting      │  SME PAID  ⏱ 0:90  tx 0x9f… │
+└──────────────────────────────┴──────────────────────────────┘
+```
+
+Calling the contract is a few lines — the wallet and gas are handled for the user:
+
+```ts
+// Seller is paid the moment delivery clears — one click, no wallet popup.
+const { writeContractAsync } = useWriteContract();
+
+async function settle(lcId: bigint) {
+  const txHash = await writeContractAsync({
+    address: HARBOR_LC,
+    abi: harborLcAbi,
+    functionName: "settle",
+    args: [lcId],
+  });
+  return txHash; // -> rendered as a live Polygon explorer link in the demo
+}
+```
+
+**Screens:** email login → Buyer (open LC, lock funds) → Seller (mark delivered) → the settlement moment (90-second timer + "SME paid" + explorer link).
+
 ## Repository structure
 
 ```
