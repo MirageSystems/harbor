@@ -1,8 +1,19 @@
 import { createPublicClient, formatEther, http, parseAbi, parseAbiItem } from "viem";
 import { polygonAmoy, foundry } from "viem/chains";
 
+// viem's foundry chain doesn't declare Multicall3; anvil gets the canonical
+// deployment injected via anvil_setCode (see contracts/README.md).
+const localChain = {
+  ...foundry,
+  contracts: {
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+    },
+  },
+} as const;
+
 export const chain =
-  process.env.NEXT_PUBLIC_CHAIN === "amoy" ? polygonAmoy : foundry;
+  process.env.NEXT_PUBLIC_CHAIN === "amoy" ? polygonAmoy : localChain;
 
 export const nativeSymbol = chain.nativeCurrency.symbol;
 
