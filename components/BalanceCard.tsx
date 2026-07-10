@@ -4,10 +4,12 @@ export function BalanceCard({
   amount,
   previousAmount,
   settledAmount,
+  token = "POL",
 }: {
   amount: string; // e.g. "12,400"
   previousAmount: string; // e.g. "14,800.00"
   settledAmount: string; // e.g. "2,400.00"
+  token?: string;
 }) {
   return (
     <div className="relative w-80">
@@ -27,7 +29,7 @@ export function BalanceCard({
             {amount}
           </span>
           <span className="rounded-md bg-primary px-2 py-0.5 font-mono text-sm font-medium text-white">
-            USDC
+            {token}
           </span>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { polygonAmoy } from "viem/chains";
+import { chain } from "@/lib/harbor";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,8 +12,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         embeddedWallets: {
           ethereum: { createOnLogin: "all-users" },
         },
-        defaultChain: polygonAmoy,
-        supportedChains: [polygonAmoy],
+        defaultChain: chain,
+        supportedChains: [chain],
         appearance: {
           theme: "light",
           accentColor: "#2B3AFF",
