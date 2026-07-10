@@ -1,4 +1,11 @@
+"use client";
+
+import { usePrivy } from "@privy-io/react-auth";
+
 export function Header() {
+  const { user, logout } = usePrivy();
+  const email = user?.email?.address;
+
   return (
     <header className="flex items-center justify-between border-b-[3px] border-ink bg-surface-raised px-10 py-4">
       <div className="flex items-center gap-2.5">
@@ -15,7 +22,17 @@ export function Header() {
         <a href="#">Counterparties</a>
       </nav>
 
-      <div className="h-8 w-8 rounded-full border-2 border-ink bg-surface-sunken" />
+      <div className="flex items-center gap-3">
+        {email && (
+          <span className="font-body text-sm text-ink-muted">{email}</span>
+        )}
+        <button
+          onClick={logout}
+          className="rounded-xl border-2 border-ink bg-surface-sunken px-3 py-1.5 font-body text-xs font-semibold text-ink transition hover:bg-surface"
+        >
+          Sign out
+        </button>
+      </div>
     </header>
   );
 }

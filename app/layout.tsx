@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { spaceGrotesk, inter, plexMono, fraunces } from "./fonts";
+import { Providers } from "@/components/Providers";
+import { AuthGate } from "@/components/AuthGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +19,11 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable} ${fraunces.variable}`}
     >
-      <body className="font-body">{children}</body>
+      <body className="font-body">
+        <Providers>
+          <AuthGate>{children}</AuthGate>
+        </Providers>
+      </body>
     </html>
   );
 }

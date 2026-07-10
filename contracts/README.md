@@ -18,6 +18,16 @@ forge test
 forge coverage --no-match-coverage "test|script"
 ```
 
+## Local dev (anvil)
+
+The frontend reads via Multicall3, which a fresh anvil chain doesn't have.
+After starting `anvil`, inject it once:
+
+```sh
+CODE=$(cast code 0xcA11bde05977b3631167028862bE2a173976CA11 --rpc-url https://rpc-amoy.polygon.technology)
+cast rpc anvil_setCode 0xcA11bde05977b3631167028862bE2a173976CA11 "$CODE" --rpc-url http://localhost:8545
+```
+
 ## Deploy (Polygon Amoy)
 
 Set `PRIVATE_KEY`, `AMOY_RPC_URL`, `POLYGONSCAN_API_KEY` in `.env`, then:

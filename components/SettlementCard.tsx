@@ -4,10 +4,12 @@ export function SettlementCard({
   status,
   amount,
   txHash,
+  explorerUrl,
 }: {
   status: "settling" | "settled";
   amount: string; // e.g. "6,400"
   txHash: string; // e.g. "0x8f2a91cd…c9e1b3d5f"
+  explorerUrl?: string | null;
 }) {
   const isSettled = status === "settled";
 
@@ -30,7 +32,18 @@ export function SettlementCard({
         <StatusPill state="paid" label="Receivable minted" />
       </div>
 
-      <div className="font-body text-xs text-ink-muted underline">{txHash}</div>
+      {explorerUrl ? (
+        <a
+          href={explorerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-body text-xs text-primary underline"
+        >
+          {txHash}
+        </a>
+      ) : (
+        <div className="font-body text-xs text-ink-muted underline">{txHash}</div>
+      )}
     </div>
   );
 }
