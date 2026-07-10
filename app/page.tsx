@@ -8,21 +8,14 @@ import { SettlementCard } from "@/components/SettlementCard";
 import { SplitCompare } from "@/components/SplitCompare";
 import { ClosingCard } from "@/components/ClosingCard";
 import { useHarbor } from "@/hooks/useHarbor";
-import { explorerTxUrl, shortAddress } from "@/lib/harbor";
-import { formatEther } from "viem";
-
-function fmt(wei: bigint): string {
-  return Number(formatEther(wei)).toLocaleString(undefined, {
-    maximumFractionDigits: 2,
-  });
-}
+import { explorerTxUrl, formatPol, nativeSymbol, shortHex } from "@/lib/harbor";
 
 export default function DashboardPage() {
   const { address, lcs, balance, lastSettledTx, pending, error, openLC, markDelivered } =
     useHarbor();
 
   const settled = lcs.filter((lc) => lc.status === "settled");
-  const latestSettled = settled[settled.length - 1];
+  const latestSettled = settled.at(-1);
   const settledTotal = settled.reduce((s, lc) => s + lc.amount, 0n);
 
   return (
@@ -38,7 +31,7 @@ export default function DashboardPage() {
         </h1>
         {address && (
           <p className="mb-8 font-mono text-xs text-ink-faint">
-            wallet {shortAddress(address)}
+            wallet {shortHex(address)}
           </p>
         )}
 
@@ -51,11 +44,12 @@ export default function DashboardPage() {
         <div className="grid grid-cols-[320px_1fr] items-start gap-6">
           <div>
             <BalanceCard
-              amount={balance !== null ? fmt(balance) : "—"}
+              amount={balance !== null ? formatPol(balance) : "—"}
               previousAmount={
-                balance !== null ? fmt(balance + settledTotal) : "—"
+                balance !== null ? formatPol(balance + settledTotal) : "—"
               }
-              settledAmount={fmt(settledTotal)}
+              settledAmount={formatPol(settledTotal)}
+              token={nativeSymbol}
             />
             <QuickActions pending={pending} onOpenLC={openLC} />
           </div>
@@ -80,8 +74,8 @@ export default function DashboardPage() {
               </div>
               <SettlementCard
                 status="settled"
-                amount={fmt(latestSettled.amount)}
-                txHash={`${lastSettledTx.slice(0, 10)}…${lastSettledTx.slice(-8)}`}
+                amount={formatPol(latestSettled.amount)}
+                txHash={shortHex(lastSettledTx, 10, 8)}
                 explorerUrl={explorerTxUrl(lastSettledTx)}
               />
             </div>

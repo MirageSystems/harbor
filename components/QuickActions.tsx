@@ -24,14 +24,13 @@ export function QuickActions({
 
   const inputCls =
     "w-full rounded-xl border-2 border-ink bg-surface px-3 py-2 font-body text-sm text-ink placeholder:text-ink-faint focus:outline-none";
+  const actionCls =
+    "flex items-center justify-between rounded-xl border-2 border-ink bg-surface-raised px-4 py-3 text-left font-body text-sm text-ink transition hover:bg-surface-sunken";
 
   return (
     <div className="mt-6 flex flex-col gap-2">
       {!formOpen ? (
-        <button
-          onClick={() => setFormOpen(true)}
-          className="flex items-center justify-between rounded-xl border-2 border-ink bg-surface-raised px-4 py-3 text-left font-body text-sm text-ink transition hover:bg-surface-sunken"
-        >
+        <button onClick={() => setFormOpen(true)} className={actionCls}>
           Open a new letter of credit
           <span className="text-ink-faint">→</span>
         </button>
@@ -76,14 +75,12 @@ export function QuickActions({
         </div>
       )}
 
-      <button className="flex items-center justify-between rounded-xl border-2 border-ink bg-surface-raised px-4 py-3 text-left font-body text-sm text-ink transition hover:bg-surface-sunken">
-        Add a counterparty
-        <span className="text-ink-faint">→</span>
-      </button>
-      <button className="flex items-center justify-between rounded-xl border-2 border-ink bg-surface-raised px-4 py-3 text-left font-body text-sm text-ink transition hover:bg-surface-sunken">
-        View settlement history
-        <span className="text-ink-faint">→</span>
-      </button>
+      {["Add a counterparty", "View settlement history"].map((label) => (
+        <button key={label} className={actionCls}>
+          {label}
+          <span className="text-ink-faint">→</span>
+        </button>
+      ))}
     </div>
   );
 }

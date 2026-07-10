@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallets, type ConnectedWallet } from "@privy-io/react-auth";
 import {
   createWalletClient,
   custom,
-  parseAbiItem,
   parseEther,
   type Address,
   type Hash,
@@ -19,15 +18,12 @@ import {
   publicClient,
   LOC_ADDRESS,
   LOC_ABI,
+  LC_SETTLED_EVENT,
   STATUS,
   type LC,
 } from "@/lib/harbor";
 
 const POLL_MS = 2000;
-
-const LC_SETTLED_EVENT = parseAbiItem(
-  "event LCSettled(uint256 indexed id, address indexed seller, uint256 amount, uint64 settledAt)"
-);
 
 type HarborWalletClient = WalletClient<Transport, Chain, Account>;
 
@@ -54,24 +50,43 @@ export function useHarbor() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Cursor so each poll only scans blocks it hasn't seen yet.
+  const nextLogBlock = useRef(0n);
+
   const refresh = useCallback(async () => {
     try {
-      const nextId = await publicClient.readContract({
-        address: LOC_ADDRESS,
-        abi: LOC_ABI,
-        functionName: "nextId",
-      });
+      const [nextId, latestBlock] = await Promise.all([
+        publicClient.readContract({
+          address: LOC_ADDRESS,
+          abi: LOC_ABI,
+          functionName: "nextId",
+        }),
+        publicClient.getBlockNumber(),
+      ]);
+
       const ids = Array.from({ length: Number(nextId) - 1 }, (_, i) => BigInt(i + 1));
-      const raw = await Promise.all(
-        ids.map((id) =>
-          publicClient.readContract({
+      const [raw, bal, settledLogs] = await Promise.all([
+        publicClient.multicall({
+          contracts: ids.map((id) => ({
             address: LOC_ADDRESS,
             abi: LOC_ABI,
-            functionName: "getLC",
-            args: [id],
-          })
-        )
-      );
+            functionName: "getLC" as const,
+            args: [id] as const,
+          })),
+          allowFailure: false,
+        }),
+        address ? publicClient.getBalance({ address }) : Promise.resolve(null),
+        nextLogBlock.current <= latestBlock
+          ? publicClient.getLogs({
+              address: LOC_ADDRESS,
+              event: LC_SETTLED_EVENT,
+              fromBlock: nextLogBlock.current,
+              toBlock: latestBlock,
+            })
+          : Promise.resolve([]),
+      ]);
+      nextLogBlock.current = latestBlock + 1n;
+
       setLcs(
         raw.map((lc, i) => ({
           id: ids[i],
@@ -84,14 +99,7 @@ export function useHarbor() {
           memo: lc.memo,
         }))
       );
-
-      if (address) setBalance(await publicClient.getBalance({ address }));
-
-      const settledLogs = await publicClient.getLogs({
-        address: LOC_ADDRESS,
-        event: LC_SETTLED_EVENT,
-        fromBlock: 0n,
-      });
+      setBalance(bal);
       const last = settledLogs.at(-1);
       if (last) setLastSettledTx(last.transactionHash);
 
@@ -144,16 +152,14 @@ export function useHarbor() {
 
   const markDelivered = useCallback(
     (id: bigint) =>
-      submit(async (client) => {
-        const hash = await client.writeContract({
+      submit((client) =>
+        client.writeContract({
           address: LOC_ADDRESS,
           abi: LOC_ABI,
           functionName: "markDelivered",
           args: [id],
-        });
-        setLastSettledTx(hash);
-        return hash;
-      }),
+        })
+      ),
     [submit]
   );
 

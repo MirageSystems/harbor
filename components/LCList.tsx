@@ -1,15 +1,14 @@
 "use client";
 
 import { StatusPill } from "./StatusPill";
-import { shortAddress, type LC } from "@/lib/harbor";
-import { formatEther } from "viem";
+import { formatPol, shortHex, type LC, type LCStatus } from "@/lib/harbor";
 
-const PILL_STATE = {
-  open: "opened",
-  settled: "paid",
-  cancelled: "opened",
-  none: "opened",
-} as const;
+const STATUS_PILL: Record<LCStatus, { state: "opened" | "paid"; label?: string }> = {
+  open: { state: "opened" },
+  settled: { state: "paid" },
+  cancelled: { state: "opened", label: "Cancelled" },
+  none: { state: "opened" },
+};
 
 export function LCList({
   lcs,
@@ -54,18 +53,15 @@ export function LCList({
                 {lc.memo || `LC #${lc.id}`}
               </div>
               <div className="font-body text-xs text-ink-faint">
-                {isBuyer ? "you" : shortAddress(lc.buyer)} →{" "}
-                {isSeller ? "you" : shortAddress(lc.seller)}
+                {isBuyer ? "you" : shortHex(lc.buyer)} →{" "}
+                {isSeller ? "you" : shortHex(lc.seller)}
               </div>
             </div>
             <div>
-              <StatusPill
-                state={PILL_STATE[lc.status]}
-                label={lc.status === "cancelled" ? "Cancelled" : undefined}
-              />
+              <StatusPill {...STATUS_PILL[lc.status]} />
             </div>
             <div className="text-right font-mono text-sm text-ink">
-              {formatEther(lc.amount)}
+              {formatPol(lc.amount)}
             </div>
             <div className="text-right">
               {lc.status === "open" && isSeller ? (
