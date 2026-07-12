@@ -11,6 +11,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         loginMethods: ["email"],
         embeddedWallets: {
           ethereum: { createOnLogin: "all-users" },
+          showWalletUIs: false,
         },
         defaultChain: chain,
         supportedChains: [chain],

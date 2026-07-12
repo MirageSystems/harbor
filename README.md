@@ -16,13 +16,13 @@ Meanwhile, **Jebel Ali Port** moves **15M+ TEUs a year**, the UAE has live, worl
 
 ## What Harbor does
 
-- **Smart-contract Letter of Credit** — the buyer locks USDC into an on-chain escrow. Funds release *automatically* the moment delivery is confirmed. No couriered documents, no manual discrepancy checks, no ten-day wait.
+- **Smart-contract Letter of Credit** — the buyer locks funds (native POL on testnet; USDC planned for mainnet) into an on-chain escrow. Funds release *automatically* the moment delivery is confirmed. No couriered documents, no manual discrepancy checks, no ten-day wait.
 - **Tokenized receivable** — the instant the LC settles, the SME's invoice becomes an on-chain asset and the SME is **paid immediately**, not in 90 days.
 - **The chain is invisible** — email login, no wallet, no seed phrase, no gas. The user sees *"Approved."* They never see the word "Polygon."
 
 ## The 90-second demo
 
-A split screen. On the left, a traditional LC ticks over: *Day 1 … Day 4 … Day 10.* On the right, Harbor: the buyer locks funds, the seller marks the shipment delivered, the contract verifies, payment releases, and the SME is paid — in **90 seconds, with a real transaction on Polygon you can open in the explorer.**
+A split screen. On the left, a traditional LC ticks over: *Day 1 … Day 4 … Day 10.* On the right, Harbor: the buyer locks funds, the seller marks the shipment delivered, and in that same transaction payment releases, and the SME is paid — in **90 seconds, with a real transaction on Polygon you can open in the explorer.**
 
 That single side-by-side *is* the product.
 
@@ -41,14 +41,14 @@ Regulatory clarity + real demand + a dense, addressable trade hub. The infrastru
 ## Architecture (MVP)
 
 ```
-  Buyer ──lock USDC──▶  [ LC Escrow Contract ]  ──delivery confirmed──▶  release payment
+  Buyer ──lock funds──▶  [ LC Escrow Contract ]  ──delivery confirmed──▶  release payment
                                   │                                            │
                                   └────────── mints ──────────▶ [ Receivable Token ] ──▶ SME paid instantly
 ```
 
 - **Chain:** Polygon Amoy testnet → mainnet
 - **Contracts:** LC escrow + receivable token (Solidity, OpenZeppelin)
-- **Settlement asset:** USDC (mock ERC-20 on testnet)
+- **Settlement asset:** native POL on testnet (USDC planned for mainnet)
 - **Wallet / UX:** embedded email wallet (no seed phrase); gasless on testnet
 - **Delivery signal:** simulated oracle for the MVP → real DP World / customs / inspection feeds in V2
 - **Frontend:** Next.js
@@ -59,80 +59,58 @@ Regulatory clarity + real demand + a dense, addressable trade hub. The infrastru
 
 ### Smart contracts
 
-Two contracts, both built on OpenZeppelin. The escrow holds the buyer's USDC and, on confirmed delivery, atomically pays the seller and mints a receivable.
+One ~100-line contract built on OpenZeppelin. The escrow holds the buyer's POL and, on confirmed delivery, atomically pays the seller and mints a receivable.
 
 ```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+// contracts/src/LetterOfCredit.sol — the real, deployed contract (~100 lines)
+contract LetterOfCredit is ERC721, ReentrancyGuard {
+    enum Status { None, Open, Settled, Cancelled }
 
-contract HarborLC {
-    enum Status { Opened, Delivered, Settled, Cancelled }
+    // Buyer opens an LC and locks native POL into escrow
+    function openLC(address seller, string calldata memo)
+        external payable returns (uint256 id);
 
-    struct LC {
-        address buyer;
-        address seller;
-        uint256 amount;    // USDC (6 decimals)
-        address oracle;    // confirms delivery (MVP: a signed attestor)
-        Status  status;
-    }
+    // Seller confirms delivery; the SAME transaction pays the seller
+    // and mints receivable NFT #id (deliver = settle, atomically)
+    function markDelivered(uint256 id) external nonReentrant;
 
-    IERC20      public immutable usdc;
-    IReceivable public immutable receivable;
-    mapping(uint256 => LC) public lcs;
-    uint256 public nextId;
-
-    // Buyer opens an LC and locks funds into escrow
-    function openLC(address seller, uint256 amount, address oracle)
-        external returns (uint256 id);
-
-    // Oracle/attestor confirms goods delivered  ->  Status.Delivered
-    function confirmDelivery(uint256 id) external;
-
-    // Pay seller + mint receivable, atomically  ->  Status.Settled
-    function settle(uint256 id) external;
+    // Buyer escape hatch before delivery
+    function cancelLC(uint256 id) external nonReentrant;
 }
 ```
 
-```solidity
-// The paid invoice, as an on-chain asset (ERC-721). V3: collateral for the financing pool.
-contract HarborReceivable is ERC721 {
-    function mint(address seller, uint256 lcId, uint256 amount) external onlyLC;
-}
-```
+The receivable is an ERC-721 minted by the escrow itself on settlement — LC id
+and token id are the same number. Deployed and running on Polygon Amoy:
+`0x5b1959F4a1542C72aD6a6f78e4F93a89BE947b35` (see docs/deployments.md for live
+tx hashes). 22 Foundry tests, 100% coverage, incl. reentrancy + invariant fuzzing.
 
 ### Frontend
 
-Next.js + an embedded email wallet (Privy / thirdweb), so there's no seed phrase and no gas prompt. One screen, two roles, and the split-screen that wins the demo:
+Next.js + Privy embedded email wallet — no seed phrase, no gas prompt, no
+signing popups. One screen, two roles, and the split-screen that wins the demo:
 
 ```
 ┌──────────────────────────────┬──────────────────────────────┐
 │  TRADITIONAL LC              │  HARBOR                       │
 │                              │                               │
-│  Day 1   Documents couriered │  Buyer  · Lock 50,000 USDC ✓ │
+│  Day 1   Documents couriered │  Buyer  · Lock 50,000 POL ✓ │
 │  Day 4   Bank review…        │  Seller · Mark delivered   ✓ │
-│  Day 7   Discrepancy! ✗      │  Contract verifies………………✓ │
-│  Day 10  …still waiting      │  SME PAID  ⏱ 0:90  tx 0x9f… │
+│  Day 7   Discrepancy! ✗      │  Payment released…………✓ │
+│  Day 10  …still waiting      │  SME PAID  ⏱ settled in 4s   │
 └──────────────────────────────┴──────────────────────────────┘
 ```
 
-Calling the contract is a few lines — the wallet and gas are handled for the user:
-
-```ts
-// Seller is paid the moment delivery clears — one click, no wallet popup.
-const { writeContractAsync } = useWriteContract();
-
-async function settle(lcId: bigint) {
-  const txHash = await writeContractAsync({
-    address: HARBOR_LC,
-    abi: harborLcAbi,
-    functionName: "settle",
-    args: [lcId],
-  });
-  return txHash; // -> rendered as a live Polygon explorer link in the demo
-}
-```
+The UI reads chain state directly (viem multicall polling — no backend, no
+database) and shows settlement time computed from on-chain timestamps.
+Getting started: docs/how-to-use.md.
 
 **Screens:** email login → Buyer (open LC, lock funds) → Seller (mark delivered) → the settlement moment (90-second timer + "SME paid" + explorer link).
+
+## Quickstart
+
+1. `npm install && npx next dev` — the app runs against local anvil by default; flip `.env.local` to `amoy` for the live testnet contract.
+2. Full setup, two-role testing walkthrough, and troubleshooting: **docs/how-to-use.md**.
+3. Contracts: `contracts/README.md` (Foundry setup, deploy, demo cycle).
 
 ## Repository structure
 

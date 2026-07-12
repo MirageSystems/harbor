@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAddress } from "viem";
 
 export function QuickActions({
   pending,
@@ -13,6 +14,9 @@ export function QuickActions({
   const [seller, setSeller] = useState("");
   const [memo, setMemo] = useState("");
   const [amount, setAmount] = useState("");
+  const [opened, setOpened] = useState(false);
+
+  const sellerInvalid = seller.length > 0 && !isAddress(seller);
 
   const submit = async () => {
     await onOpenLC(seller, memo, amount);
@@ -20,17 +24,20 @@ export function QuickActions({
     setSeller("");
     setMemo("");
     setAmount("");
+    setOpened(true);
+    setTimeout(() => setOpened(false), 6000);
   };
 
   const inputCls =
     "w-full rounded-xl border-2 border-ink bg-surface px-3 py-2 font-body text-sm text-ink placeholder:text-ink-faint focus:outline-none";
-  const actionCls =
-    "flex items-center justify-between rounded-xl border-2 border-ink bg-surface-raised px-4 py-3 text-left font-body text-sm text-ink transition hover:bg-surface-sunken";
 
   return (
     <div className="mt-6 flex flex-col gap-2">
       {!formOpen ? (
-        <button onClick={() => setFormOpen(true)} className={actionCls}>
+        <button
+          onClick={() => setFormOpen(true)}
+          className="flex items-center justify-between rounded-xl border-2 border-ink bg-surface-raised px-4 py-3 text-left font-body text-sm text-ink transition hover:bg-surface-sunken"
+        >
           Open a new letter of credit
           <span className="text-ink-faint">→</span>
         </button>
@@ -43,8 +50,13 @@ export function QuickActions({
             className={inputCls}
             placeholder="Seller address (0x…)"
             value={seller}
-            onChange={(e) => setSeller(e.target.value)}
+            onChange={(e) => setSeller(e.target.value.trim())}
           />
+          {sellerInvalid && (
+            <p className="font-body text-xs text-accent">
+              That doesn&apos;t look like a valid address.
+            </p>
+          )}
           <input
             className={inputCls}
             placeholder="Memo, e.g. PO-2026-0710"
@@ -60,7 +72,7 @@ export function QuickActions({
           <div className="mt-1 flex gap-2">
             <button
               onClick={submit}
-              disabled={pending || !seller || !amount}
+              disabled={pending || !seller || sellerInvalid || !amount}
               className="flex-1 rounded-xl border-2 border-ink bg-primary px-3 py-2 font-display text-sm font-bold text-white transition hover:bg-primary-dark disabled:opacity-50"
             >
               {pending ? "Locking funds…" : "Open & lock funds"}
@@ -75,12 +87,11 @@ export function QuickActions({
         </div>
       )}
 
-      {["Add a counterparty", "View settlement history"].map((label) => (
-        <button key={label} className={actionCls}>
-          {label}
-          <span className="text-ink-faint">→</span>
-        </button>
-      ))}
+      {opened && (
+        <p className="rounded-xl border-2 border-ink bg-mint px-4 py-3 font-display text-sm font-bold text-white">
+          Letter of credit opened — funds locked ✓
+        </p>
+      )}
     </div>
   );
 }

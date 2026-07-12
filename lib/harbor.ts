@@ -61,6 +61,29 @@ export function shortHex(hex: string, head = 6, tail = 4): string {
   return `${hex.slice(0, head)}…${hex.slice(-tail)}`;
 }
 
+export function explorerTokenUrl(id: bigint): string | null {
+  const base = chain.blockExplorers?.default?.url;
+  return base ? `${base}/token/${LOC_ADDRESS}?a=${id}` : null;
+}
+
+/** mm:ss for live tickers ("1:07") */
+export function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.max(0, seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/** One-line user-facing message for a write failure; raw detail kept separately. */
+export function humanizeError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("insufficient funds")) return "Not enough POL in your wallet for this amount plus gas.";
+  if (m.includes("rejected") || m.includes("denied")) return "Signature request was declined.";
+  if (m.includes("invalidseller")) return "That seller address isn't valid for this LC.";
+  if (m.includes("fetch") || m.includes("network") || m.includes("timeout"))
+    return "Can't reach the network — check your connection and try again.";
+  return "Transaction failed.";
+}
+
 export function formatPol(wei: bigint): string {
   return Number(formatEther(wei)).toLocaleString(undefined, {
     maximumFractionDigits: 2,

@@ -20,6 +20,7 @@ import {
   LOC_ABI,
   LC_SETTLED_EVENT,
   STATUS,
+  humanizeError,
   type LC,
 } from "@/lib/harbor";
 
@@ -48,7 +49,9 @@ export function useHarbor() {
   const [balance, setBalance] = useState<bigint | null>(null);
   const [lastSettledTx, setLastSettledTx] = useState<Hash | null>(null);
   const [pending, setPending] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   // Cursor so each poll only scans blocks it hasn't seen yet.
   const nextLogBlock = useRef(0n);
@@ -104,8 +107,13 @@ export function useHarbor() {
       if (last) setLastSettledTx(last.transactionHash);
 
       setError(null);
+      setErrorDetail(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(humanizeError(msg));
+      setErrorDetail(msg);
+    } finally {
+      setLoaded(true);
     }
   }, [address]);
 
@@ -120,6 +128,7 @@ export function useHarbor() {
       if (!wallet) throw new Error("No wallet connected");
       setPending(true);
       setError(null);
+      setErrorDetail(null);
       try {
         const client = await walletClientFor(wallet);
         const hash = await send(client);
@@ -127,7 +136,9 @@ export function useHarbor() {
         await refresh();
         return hash;
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(humanizeError(msg));
+        setErrorDetail(msg);
         throw e;
       } finally {
         setPending(false);
@@ -163,5 +174,16 @@ export function useHarbor() {
     [submit]
   );
 
-  return { address, lcs, balance, lastSettledTx, pending, error, openLC, markDelivered };
+  return {
+    address,
+    lcs,
+    balance,
+    lastSettledTx,
+    pending,
+    loaded,
+    error,
+    errorDetail,
+    openLC,
+    markDelivered,
+  };
 }

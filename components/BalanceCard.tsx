@@ -1,14 +1,12 @@
-import { StatusPill } from "./StatusPill";
-
 export function BalanceCard({
   amount,
-  previousAmount,
+  lockedAmount,
   settledAmount,
   token = "POL",
 }: {
-  amount: string; // e.g. "12,400"
-  previousAmount: string; // e.g. "14,800.00"
-  settledAmount: string; // e.g. "2,400.00"
+  amount: string; // wallet balance, e.g. "12,400"
+  lockedAmount: string; // sum escrowed in open LCs
+  settledAmount: string; // sum settled to date
   token?: string;
 }) {
   return (
@@ -21,7 +19,6 @@ export function BalanceCard({
           <span className="font-body text-sm font-semibold text-ink-muted">
             Available balance
           </span>
-          <StatusPill state="paid" />
         </div>
 
         <div className="mb-3.5 flex items-baseline gap-2">
@@ -34,15 +31,14 @@ export function BalanceCard({
         </div>
 
         <p className="font-body text-[13px] leading-5 text-ink-muted">
-          Down from{" "}
           <span className="rounded bg-yellow px-1 font-mono font-medium text-ink">
-            {previousAmount}
+            {lockedAmount}
           </span>{" "}
-          after{" "}
+          locked in open LCs ·{" "}
           <span className="rounded bg-yellow px-1 font-mono font-medium text-ink">
             {settledAmount}
           </span>{" "}
-          settled
+          settled to date
         </p>
       </div>
     </div>

@@ -37,7 +37,7 @@ Regulatory clarity, real stablecoin demand, and a massive local trade hub rarely
 Harbor does three things, and only three things, in its first version:
 
 **3.1 Smart-contract Letter of Credit.**
-The buyer locks USDC into an on-chain escrow contract. The funds are committed but not gone, so the seller can trust the "yes." When delivery is confirmed, the contract releases payment automatically. No couriered documents, no manual discrepancy review, no ten-day cycle.
+The buyer locks funds (native POL on testnet; USDC planned for mainnet) into an on-chain escrow contract. The funds are committed but not gone, so the seller can trust the "yes." When delivery is confirmed, the contract releases payment automatically. No couriered documents, no manual discrepancy review, no ten-day cycle.
 
 **3.2 Tokenized receivable.**
 The instant the LC settles, the SME's invoice is minted as an on-chain receivable token and the SME is paid immediately — rather than waiting the typical 60–90 days for a buyer to pay. In later versions, these tokens become the basis for a financing pool (Section 6).
@@ -50,12 +50,12 @@ The distrust between parties **is** the core problem, and a shared, unforgeable 
 ## 4. How it works
 
 ```
-  Buyer ──lock USDC──▶  [ LC Escrow Contract ]  ──delivery confirmed──▶  release payment to seller
+  Buyer ──lock funds──▶  [ LC Escrow Contract ]  ──delivery confirmed──▶  release payment to seller
                                   │                                              │
                                   └──────────── mints ───────────▶  [ Receivable Token ] ──▶ SME paid instantly
 ```
 
-1. **Issue** — Buyer opens an LC and locks USDC into the escrow contract.
+1. **Issue** — Buyer opens an LC and locks funds into the escrow contract.
 2. **Ship** — Seller dispatches goods; delivery is attested (simulated in the MVP; a real DP World / customs / inspection oracle in V2).
 3. **Verify & release** — On confirmation, the contract releases payment to the seller and mints the receivable token.
 4. **Instant payout** — The SME is paid immediately, atomically, on-chain.
@@ -68,7 +68,7 @@ What takes 7–10 days today completes in about 90 seconds, with a transaction a
 | --- | --- | --- |
 | Chain | Polygon Amoy testnet | Polygon mainnet; later evaluate Polygon CDK app-chain for trade-data privacy |
 | Contracts | LC escrow + receivable token (Solidity, OpenZeppelin) | Add eBL (MLETR) transferable records |
-| Settlement asset | USDC (mock ERC-20 on testnet) | Mainnet USDC / regulated AED stablecoin |
+| Settlement asset | Native POL (testnet) | Mainnet USDC / regulated AED stablecoin |
 | Wallet / UX | Embedded email wallet, gasless | Account abstraction at scale |
 | Delivery signal | Simulated, signed attestation | Real oracle: DP World, customs, inspection |
 | Frontend | Next.js | — |
@@ -99,4 +99,4 @@ Land one corridor through **Jebel Ali**, using DIFC's ecosystem (introductions t
 
 ## 10. Status & disclaimers
 
-Harbor is at hackathon-MVP stage for the Ignyte Challenges. The MVP runs on Polygon testnet, uses a mock settlement token, and simulates the delivery oracle; these are explicitly noted as MVP simplifications with a defined path to production in the roadmap. Nothing here is financial advice or an offer of securities. Trade-finance and stablecoin activity in the UAE is regulated; production deployment will be conducted under the appropriate DIFC/CBUAE framework.
+Harbor is at hackathon-MVP stage for the Ignyte Challenges. The MVP runs on Polygon testnet, settles in the chain's native token, and simulates the delivery oracle; these are explicitly noted as MVP simplifications with a defined path to production in the roadmap. Nothing here is financial advice or an offer of securities. Trade-finance and stablecoin activity in the UAE is regulated; production deployment will be conducted under the appropriate DIFC/CBUAE framework.
