@@ -56,6 +56,12 @@ export function useHarbor() {
   // Cursor so each poll only scans blocks it hasn't seen yet.
   const nextLogBlock = useRef(0n);
 
+  const reportError = useCallback((e: unknown) => {
+    const msg = e instanceof Error ? e.message : String(e);
+    setError(humanizeError(msg));
+    setErrorDetail(msg);
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const [nextId, latestBlock] = await Promise.all([
@@ -109,13 +115,11 @@ export function useHarbor() {
       setError(null);
       setErrorDetail(null);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(humanizeError(msg));
-      setErrorDetail(msg);
+      reportError(e);
     } finally {
       setLoaded(true);
     }
-  }, [address]);
+  }, [address, reportError]);
 
   useEffect(() => {
     refresh();
@@ -136,15 +140,13 @@ export function useHarbor() {
         await refresh();
         return hash;
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        setError(humanizeError(msg));
-        setErrorDetail(msg);
+        reportError(e);
         throw e;
       } finally {
         setPending(false);
       }
     },
-    [wallet, refresh]
+    [wallet, refresh, reportError]
   );
 
   const openLC = useCallback(

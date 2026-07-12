@@ -4,6 +4,47 @@ import { useEffect, useState } from "react";
 import { StatusPill } from "./StatusPill";
 import { formatElapsed, formatPol, shortHex, type LC, type LCStatus } from "@/lib/harbor";
 
+function ActionCell({
+  lc,
+  isSeller,
+  now,
+  pending,
+  onMarkDelivered,
+}: {
+  lc: LC;
+  isSeller: boolean;
+  now: number;
+  pending: boolean;
+  onMarkDelivered: (id: bigint) => void;
+}) {
+  if (lc.status === "open" && isSeller) {
+    return (
+      <button
+        onClick={() => onMarkDelivered(lc.id)}
+        disabled={pending}
+        className="rounded-xl border-2 border-ink bg-mint px-3 py-1.5 font-display text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+      >
+        Mark delivered
+      </button>
+    );
+  }
+  if (lc.status === "open") {
+    return (
+      <span className="font-mono text-sm text-ink-muted">
+        open {formatElapsed(now - lc.openedAt)}
+      </span>
+    );
+  }
+  if (lc.status === "settled") {
+    return (
+      <span className="font-mono text-sm text-mint">
+        settled in {lc.settledAt - lc.openedAt}s
+      </span>
+    );
+  }
+  return <span className="font-body text-sm text-ink-muted">—</span>;
+}
+
 const STATUS_PILL: Record<LCStatus, { state: "opened" | "paid"; label?: string }> = {
   open: { state: "opened" },
   settled: { state: "paid" },
@@ -88,25 +129,13 @@ export function LCList({
               {formatPol(lc.amount)}
             </div>
             <div className="text-right">
-              {isOpen && isSeller ? (
-                <button
-                  onClick={() => onMarkDelivered(lc.id)}
-                  disabled={pending}
-                  className="rounded-xl border-2 border-ink bg-mint px-3 py-1.5 font-display text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
-                >
-                  Mark delivered
-                </button>
-              ) : isOpen ? (
-                <span className="font-mono text-sm text-ink-muted">
-                  open {formatElapsed(now - lc.openedAt)}
-                </span>
-              ) : lc.status === "settled" ? (
-                <span className="font-mono text-sm text-mint">
-                  settled in {lc.settledAt - lc.openedAt}s
-                </span>
-              ) : (
-                <span className="font-body text-sm text-ink-muted">—</span>
-              )}
+              <ActionCell
+                lc={lc}
+                isSeller={isSeller}
+                now={now}
+                pending={pending}
+                onMarkDelivered={onMarkDelivered}
+              />
             </div>
           </div>
         );

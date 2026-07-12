@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Header } from "@/components/Header";
 import { BalanceCard } from "@/components/BalanceCard";
 import { QuickActions } from "@/components/QuickActions";
@@ -30,15 +31,18 @@ export default function DashboardPage() {
     markDelivered,
   } = useHarbor();
 
-  const settled = lcs.filter((lc) => lc.status === "settled");
-  const latestSettled = settled.at(-1);
-  const settledTotal = settled.reduce((s, lc) => s + lc.amount, 0n);
-  const lockedTotal = lcs
-    .filter((lc) => lc.status === "open")
-    .reduce((s, lc) => s + lc.amount, 0n);
-  const settledIn = latestSettled
-    ? latestSettled.settledAt - latestSettled.openedAt
-    : 0;
+  const { latestSettled, settledTotal, lockedTotal, settledIn } = useMemo(() => {
+    const settled = lcs.filter((lc) => lc.status === "settled");
+    const latest = settled.at(-1);
+    return {
+      latestSettled: latest,
+      settledTotal: settled.reduce((s, lc) => s + lc.amount, 0n),
+      lockedTotal: lcs
+        .filter((lc) => lc.status === "open")
+        .reduce((s, lc) => s + lc.amount, 0n),
+      settledIn: latest ? latest.settledAt - latest.openedAt : 0,
+    };
+  }, [lcs]);
 
   return (
     <main className="min-h-screen bg-surface">

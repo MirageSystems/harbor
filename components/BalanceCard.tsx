@@ -11,7 +11,6 @@ export function BalanceCard({
 }) {
   return (
     <div className="relative w-80">
-      {/* corner badge — remove this div if it feels like too much */}
       <div className="absolute -right-3.5 -top-3.5 h-7 w-7 rounded-full border-2 border-ink bg-accent" />
 
       <div className="rounded-card border-[3px] border-ink bg-surface-raised p-6 shadow-sticker">

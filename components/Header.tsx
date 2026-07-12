@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { useWallets } from "@privy-io/react-auth";
-import { chain, shortHex } from "@/lib/harbor";
-
-const CHAIN_LABEL = chain.id === 80002 ? "Amoy testnet" : "Local";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { chainLabel, shortHex } from "@/lib/harbor";
 
 export function Header() {
   const { user, logout } = usePrivy();
@@ -27,7 +24,7 @@ export function Header() {
         <div className="relative h-7 w-7 rounded-lg border-2 border-ink bg-primary" />
         <span className="font-display text-base font-bold text-ink">Harbor</span>
         <span className="ml-3 rounded-pill border-2 border-ink bg-yellow px-2.5 py-0.5 font-display text-[11px] font-bold text-ink">
-          {CHAIN_LABEL}
+          {chainLabel}
         </span>
       </div>
 

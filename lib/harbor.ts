@@ -16,6 +16,7 @@ export const chain =
   process.env.NEXT_PUBLIC_CHAIN === "amoy" ? polygonAmoy : localChain;
 
 export const nativeSymbol = chain.nativeCurrency.symbol;
+export const chainLabel = chain.id === polygonAmoy.id ? "Amoy testnet" : "Local";
 
 export const LOC_ADDRESS = (process.env.NEXT_PUBLIC_LOC_ADDRESS ??
   "0x5FbDB2315678afecb367f032d93F642f64180aa3") as `0x${string}`;
