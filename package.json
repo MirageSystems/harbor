@@ -1,17 +1,19 @@
 {
-  "name": "harbor-frontend",
+  "name": "harbor",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3111",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@privy-io/react-auth": "^3.34.0",
     "next": "^16.2.10",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "viem": "^2.52.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
@@ -24,5 +26,8 @@
   },
   "overrides": {
     "postcss": "^8.5.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

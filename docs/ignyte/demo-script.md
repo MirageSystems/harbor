@@ -63,4 +63,4 @@ Everything below, and nothing more, is V1:
 - [ ] Clickable tx hash → Polygon explorer
 - [ ] Cosmetic-but-essential: the live elapsed-time display (real on-chain timestamps) + the **"Traditional LC" day-counter** panel
 
-If it's not on this list, it's in the parking lot. See [`roadmap.md`](roadmap.md).
+If it's not on this list, it's in the parking lot. See [`build-plan.md`](build-plan.md).

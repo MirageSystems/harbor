@@ -14,9 +14,7 @@ contract LetterOfCreditTest is Test {
 
     uint256 constant AMOUNT = 2_400 ether;
 
-    event LCOpened(
-        uint256 indexed id, address indexed buyer, address indexed seller, uint256 amount, string memo
-    );
+    event LCOpened(uint256 indexed id, address indexed buyer, address indexed seller, uint256 amount, string memo);
     event LCSettled(uint256 indexed id, address indexed seller, uint256 amount, uint64 settledAt);
     event LCCancelled(uint256 indexed id);
 
@@ -328,8 +326,9 @@ contract ReentrantSeller is IERC721Receiver {
     receive() external payable {
         // try to re-enter and drain via the same (or any) LC
         try loc.markDelivered(targetId) {
-            // should never succeed
-        } catch {
+        // should never succeed
+        }
+        catch {
             reentryBlocked = true;
         }
     }

@@ -1,146 +1,88 @@
 # Harbor
 
-> **Where trade and capital settle, safely.**
+Harbor settles a letter of credit on chain in about 90 seconds instead of 7 to 10 days. The buyer locks funds in an escrow contract on Polygon. When the seller confirms delivery, the same transaction pays the seller and mints the settled invoice as an ERC-721 token.
 
-Harbor turns a **7–10 day manual Letter of Credit into a ~90-second on-chain settlement** — and pays small businesses the moment their goods are delivered by tokenizing the receivable. Built on **Polygon**. Launched from **DIFC**.
+Users sign in with email. Privy creates an embedded wallet for them, so nobody handles a seed phrase or approves a signing popup.
 
-A product by **Mirage Systems**, for the [Ignyte Challenges](#status) (DIFC × Polygon).
-
----
-
-## The problem
-
-Over **USD 2 trillion** in global trade finance goes unfilled every year. **40% of SME applications are rejected.** A single Letter of Credit takes **7–10 days** of manual, paper-based, error-prone processing — a typo can bounce the whole thing. The capital exists. The trust exists. The *rails* don't.
-
-Meanwhile, **Jebel Ali Port** moves **15M+ TEUs a year**, the UAE has live, world-first stablecoin regulation, and stablecoins already make up **51.3%** of the country's crypto activity. The market is waiting for someone to connect the two.
-
-## What Harbor does
-
-- **Smart-contract Letter of Credit** — the buyer locks funds (native POL on testnet; USDC planned for mainnet) into an on-chain escrow. Funds release *automatically* the moment delivery is confirmed. No couriered documents, no manual discrepancy checks, no ten-day wait.
-- **Tokenized receivable** — the instant the LC settles, the SME's invoice becomes an on-chain asset and the SME is **paid immediately**, not in 90 days.
-- **The chain is invisible** — email login, no wallet, no seed phrase, no gas. The user sees *"Approved."* They never see the word "Polygon."
-
-## The 90-second demo
-
-A split screen. On the left, a traditional LC ticks over: *Day 1 … Day 4 … Day 10.* On the right, Harbor: the buyer locks funds, the seller marks the shipment delivered, and in that same transaction payment releases, and the SME is paid — in **90 seconds, with a real transaction on Polygon you can open in the explorer.**
-
-That single side-by-side *is* the product.
-
-## Why now, why here
-
-| Signal | Number |
-| --- | --- |
-| UAE annual remittances | USD 50B+ |
-| UAE crypto adoption | ~30% |
-| Stablecoin share of UAE crypto activity | 51.3% |
-| Jebel Ali Port throughput | 15M+ TEUs / year |
-| Comprehensive stablecoin regulation | Live (world-first) |
-
-Regulatory clarity + real demand + a dense, addressable trade hub. The infrastructure is ready.
-
-## Architecture (MVP)
-
-```
-  Buyer ──lock funds──▶  [ LC Escrow Contract ]  ──delivery confirmed──▶  release payment
-                                  │                                            │
-                                  └────────── mints ──────────▶ [ Receivable Token ] ──▶ SME paid instantly
-```
-
-- **Chain:** Polygon Amoy testnet → mainnet
-- **Contracts:** LC escrow + receivable token (Solidity, OpenZeppelin)
-- **Settlement asset:** native POL on testnet (USDC planned for mainnet)
-- **Wallet / UX:** embedded email wallet (no seed phrase); gasless on testnet
-- **Delivery signal:** simulated oracle for the MVP → real DP World / customs / inspection feeds in V2
-- **Frontend:** Next.js
-
-## Technical preview
-
-> Illustrative sketches, not the final API — they show the *shape* of V1.
-
-### Smart contracts
-
-One ~100-line contract built on OpenZeppelin. The escrow holds the buyer's POL and, on confirmed delivery, atomically pays the seller and mints a receivable.
-
-```solidity
-// contracts/src/LetterOfCredit.sol — the real, deployed contract (~100 lines)
-contract LetterOfCredit is ERC721, ReentrancyGuard {
-    enum Status { None, Open, Settled, Cancelled }
-
-    // Buyer opens an LC and locks native POL into escrow
-    function openLC(address seller, string calldata memo)
-        external payable returns (uint256 id);
-
-    // Seller confirms delivery; the SAME transaction pays the seller
-    // and mints receivable NFT #id (deliver = settle, atomically)
-    function markDelivered(uint256 id) external nonReentrant;
-
-    // Buyer escape hatch before delivery
-    function cancelLC(uint256 id) external nonReentrant;
-}
-```
-
-The receivable is an ERC-721 minted by the escrow itself on settlement — LC id
-and token id are the same number. Deployed and running on Polygon Amoy:
-`0x5b1959F4a1542C72aD6a6f78e4F93a89BE947b35` (see docs/deployments.md for live
-tx hashes). 22 Foundry tests, 100% coverage, incl. reentrancy + invariant fuzzing.
-
-### Frontend
-
-Next.js + Privy embedded email wallet — no seed phrase, no gas prompt, no
-signing popups. One screen, two roles, and the split-screen that wins the demo:
-
-```
-┌──────────────────────────────┬──────────────────────────────┐
-│  TRADITIONAL LC              │  HARBOR                       │
-│                              │                               │
-│  Day 1   Documents couriered │  Buyer  · Lock 50,000 POL ✓ │
-│  Day 4   Bank review…        │  Seller · Mark delivered   ✓ │
-│  Day 7   Discrepancy! ✗      │  Payment released…………✓ │
-│  Day 10  …still waiting      │  SME PAID  ⏱ settled in 4s   │
-└──────────────────────────────┴──────────────────────────────┘
-```
-
-The UI reads chain state directly (viem multicall polling — no backend, no
-database) and shows settlement time computed from on-chain timestamps.
-Getting started: docs/how-to-use.md.
-
-**Screens:** email login → Buyer (open LC, lock funds) → Seller (mark delivered) → the settlement moment (90-second timer + "SME paid" + explorer link).
-
-## Quickstart
-
-1. `npm install && npx next dev` — the app runs against local anvil by default; flip `.env.local` to `amoy` for the live testnet contract.
-2. Full setup, two-role testing walkthrough, and troubleshooting: **docs/how-to-use.md**.
-3. Contracts: `contracts/README.md` (Foundry setup, deploy, demo cycle).
-
-## Repository structure
-
-```
-.
-├── README.md            ← you are here
-├── docs/
-│   ├── whitepaper.md     ← the concise whitepaper
-│   └── roadmap.md        ← phase-wise roadmap & frozen V1 scope
-├── contracts/           ← LC escrow + receivable token (builders)
-└── app/                 ← Next.js frontend (builders)
-```
-
-## Roadmap
-
-Full plan in **[docs/roadmap.md](docs/roadmap.md)**. In short:
-
-- **V1 — Win the hackathon (now → 13 Jul 2026):** the frozen scope above. One screen, one gasp.
-- **V2 — Win Demo Day (→ Sep 2026):** real delivery oracle, electronic Bill of Lading (eBL / MLETR), one live corridor through Jebel Ali.
-- **V3 — Scale:** receivable financing pool, on-chain trade credit scoring, merchant payments.
-
-## Team
-
-**Mirage Systems** — 2 builders + 1 PM/pitch.
+Built by [Mirage Systems](https://github.com/MirageSystems) for the Ignyte Challenges (DIFC × Polygon).
 
 ## Status
 
-Hackathon MVP for the **Ignyte Challenges** (DIFC × Polygon).
-**Submission deadline:** 13 July 2026 · **Demo Day:** Dubai, mid–late September 2026.
+Testnet MVP, submitted to Ignyte in July 2026. The contract is deployed on Polygon Amoy and has settled real transactions. It is not audited and not on mainnet.
+
+| | |
+| --- | --- |
+| Contract | [`0x5b1959F4a1542C72aD6a6f78e4F93a89BE947b35`](https://amoy.polygonscan.com/address/0x5b1959F4a1542C72aD6a6f78e4F93a89BE947b35) (Amoy, chain 80002) |
+| First settlement | [`0x8739…5800`](https://amoy.polygonscan.com/tx/0x873951eb3405b81056f21deaa0a9200f811dc966c8a00556aded99b559ee5800) |
+| Tests | 22 Foundry tests, including reentrancy and invariant fuzzing |
+
+Known MVP limits:
+
+- Escrow holds native POL. USDC is planned for mainnet.
+- The seller attests delivery. A real delivery oracle is on the [roadmap](docs/roadmap.md).
+- The buyer can cancel any open LC. There is no timelock.
+- Users never see a gas prompt, but each embedded wallet pays gas in POL and needs a small balance.
+
+## How it works
+
+```
+Buyer ── openLC (locks POL) ──▶ LetterOfCredit ── markDelivered ──▶ Seller paid
+                                       │                               (same tx)
+                                       └──── mints receivable #id ──▶ Seller
+```
+
+The contract is about 100 lines with no owner, no proxy and no pause switch. The frontend reads chain state directly with viem multicall polling. There is no backend or database. Settlement time on screen is `settledAt - openedAt`, taken from block timestamps.
+
+Details: [contract spec](docs/contract-spec.md).
+
+## Quickstart
+
+Requirements: Node 20+, [Foundry](https://book.getfoundry.sh/getting-started/installation), and a [Privy](https://privy.io) app ID.
+
+```sh
+git clone --recurse-submodules https://github.com/MirageSystems/harbor.git
+cd harbor
+npm ci
+cp .env.example .env.local   # add your Privy app ID
+npm run dev                  # http://localhost:3111
+```
+
+By default the app talks to a local anvil chain, which needs the contract deployed and Multicall3 injected first. To use the live Amoy contract instead, set `NEXT_PUBLIC_CHAIN=amoy` in `.env.local`.
+
+[Running locally](docs/running-locally.md) covers anvil setup, funding wallets, and testing both the buyer and seller roles.
+
+Contracts:
+
+```sh
+cd contracts
+forge test
+```
+
+## Repository layout
+
+```
+app/          Next.js app router entry
+components/   UI components
+hooks/        useHarbor: chain reads and writes
+lib/          chain config, contract ABI, viem client
+contracts/    Foundry project: LetterOfCredit, tests, deploy scripts
+docs/         spec, roadmap, whitepaper, deployments
+docs/ignyte/  hackathon material, kept as a record
+```
+
+## Documentation
+
+- [Running locally](docs/running-locally.md)
+- [Contract spec](docs/contract-spec.md)
+- [Deployments](docs/deployments.md)
+- [Roadmap](docs/roadmap.md)
+- [Whitepaper](docs/whitepaper.md)
+- [Ignyte submission material](docs/ignyte/)
+
+## Security
+
+Please report vulnerabilities privately. See [SECURITY.md](SECURITY.md).
 
 ## License
 
-To be finalized. Per competition rules, a non-exclusive license to the winning submission is granted to Ignyte Challenges.
+Copyright © 2026 Mirage Systems. All rights reserved. The source is published for reference and is not licensed for reuse. See [LICENSE](LICENSE).
