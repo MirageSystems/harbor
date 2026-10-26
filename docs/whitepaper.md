@@ -1,102 +1,91 @@
-# Harbor — Whitepaper
+# Harbor whitepaper
 
-**Where trade and capital settle, safely.**
+Mirage Systems · v0.2 · October 2026. First version written for the Ignyte Challenges (DIFC × Polygon), June 2026.
 
-*Mirage Systems · v0.1 (concise) · June 2026*
-*Prepared for the Ignyte Challenges (DIFC × Polygon)*
+## Summary
 
----
+Harbor is a trade-finance settlement layer on Polygon. It replaces the paper letter of credit, which takes 7 to 10 days, with a smart contract that settles in about 90 seconds. When delivery is confirmed, the same transaction pays the exporter and turns the paid invoice into an on-chain receivable. Users sign in with email and never manage a wallet or seed phrase.
 
-## Abstract
-
-Harbor is an on-chain trade-finance settlement layer built on Polygon. It replaces the 7–10 day, paper-based Letter of Credit (LC) with a self-executing smart contract that settles in roughly 90 seconds, and it pays small and medium-sized exporters the moment their goods are delivered by tokenizing the receivable. Harbor hides the blockchain entirely behind an email login — no wallet, no seed phrase, no gas — so a small business experiences only one thing: a near-instant *"Approved."* This document describes the problem, the solution, the architecture, and the path from a hackathon MVP to a scaled product launched from the DIFC.
+This paper covers the problem, how Harbor works, the current MVP, and the path to a product launched from the DIFC.
 
 ## 1. The problem
 
-International trade runs on a trust gap. The exporter wants to be paid before shipping; the importer wants the goods before paying. For centuries, banks have bridged this with the **Letter of Credit** — a guarantee that the seller is paid once they prove the goods shipped. The instrument works. The *process* is broken:
+Cross-border trade has a trust gap. The exporter wants payment before shipping, and the importer wants the goods before paying. Banks bridge this with the letter of credit (LC), a promise that the seller gets paid once they prove the goods shipped.
 
-- **USD 2 trillion+** of global trade finance demand goes unfilled every year (the trade finance gap).
-- **40% of SME applications are rejected** — roughly four times the rejection rate of large corporates — because per-deal compliance (KYC/AML) costs nearly the same on a USD 50K deal as on a USD 5M one, so banks rationally deprioritize the small ones.
-- **A single LC takes 7–10 days**, moving paper and PDFs between multiple banks, with humans manually checking that every document matches. A trivial discrepancy — a typo, a date off by one — bounces the whole thing back.
+The instrument works. The process doesn't:
 
-The result is frozen working capital, capped trade volume, and creditworthy small businesses told "no" by a process, not by their actual risk.
+- More than USD 2 trillion of trade-finance demand goes unmet each year.
+- About 40% of SME applications are rejected, around four times the rate for large companies. KYC and AML checks cost a bank nearly the same on a USD 50,000 deal as on a USD 5 million one, so small deals lose.
+- One LC takes 7 to 10 days of paper and PDFs moving between banks, with people checking that every document matches. A typo or a wrong date sends it back.
 
-## 2. Why now, why the UAE
+Working capital sits frozen, and creditworthy small businesses get turned down by the process rather than by their actual risk.
 
-The UAE is the right place to fix this first:
+## 2. Why the UAE first
 
-- **USD 50B+** in annual remittances and a **USD 10.8B** e-commerce market.
-- **~30%** crypto adoption; **stablecoins are 51.3%** of all crypto activity in the country.
-- The **world's first comprehensive stablecoin regulation is live**, giving builders legal clarity instead of ambiguity.
-- **Jebel Ali Port** moves **15M+ TEUs annually** — a dense, concentrated beachhead where every container is a trade that needs financing, documentation, and settlement.
+- More than USD 50 billion in annual remittances and a USD 10.8 billion e-commerce market.
+- About 30% crypto adoption, with stablecoins making up 51.3% of crypto activity.
+- Comprehensive stablecoin regulation already in force.
+- Jebel Ali Port handles more than 15 million TEUs a year. Each container is a trade that needs financing, documents and settlement.
 
-Regulatory clarity, real stablecoin demand, and a massive local trade hub rarely line up at once. They do here.
+## 3. What Harbor does
 
-## 3. The solution: Harbor
+**A smart-contract letter of credit.** The buyer locks funds in an escrow contract. The seller can see that the money is committed. When delivery is confirmed, the contract pays the seller. No couriered documents and no manual discrepancy checks.
 
-Harbor does three things, and only three things, in its first version:
+**A tokenized receivable.** The settling transaction also mints the paid invoice as an ERC-721 token owned by the seller. Today it is proof of settlement. Later it becomes something a financing pool can buy (section 6).
 
-**3.1 Smart-contract Letter of Credit.**
-The buyer locks funds (native POL on testnet; USDC planned for mainnet) into an on-chain escrow contract. The funds are committed but not gone, so the seller can trust the "yes." When delivery is confirmed, the contract releases payment automatically. No couriered documents, no manual discrepancy review, no ten-day cycle.
+**No visible blockchain.** Users sign in with email. Privy creates an embedded wallet behind the scenes, and transactions go through without signing popups. A small business sees its LCs and balances, not wallets or chain names.
 
-**3.2 Tokenized receivable.**
-The instant the LC settles, the SME's invoice is minted as an on-chain receivable token and the SME is paid immediately — rather than waiting the typical 60–90 days for a buyer to pay. In later versions, these tokens become the basis for a financing pool (Section 6).
-
-**3.3 An invisible chain.**
-The blockchain is plumbing, not product. Users sign in with email through an embedded wallet; gas is sponsored; settlement is in stablecoins abstracted behind the interface. A small business never sees a wallet, a seed phrase, or the word "Polygon." It sees *"Approved."*
-
-The distrust between parties **is** the core problem, and a shared, unforgeable ledger is the one tool that dissolves it — letting the payment release itself. That, and only that, is why Harbor uses a blockchain.
+The parties don't trust each other, and that is the core problem. A shared ledger that releases payment on its own rules removes the need for that trust. That is the reason Harbor uses a blockchain.
 
 ## 4. How it works
 
 ```
-  Buyer ──lock funds──▶  [ LC Escrow Contract ]  ──delivery confirmed──▶  release payment to seller
-                                  │                                              │
-                                  └──────────── mints ───────────▶  [ Receivable Token ] ──▶ SME paid instantly
+Buyer ── openLC (locks funds) ──▶ LC escrow ── markDelivered ──▶ Seller paid
+                                      │                            (same tx)
+                                      └──── mints receivable ───▶ Seller
 ```
 
-1. **Issue** — Buyer opens an LC and locks funds into the escrow contract.
-2. **Ship** — Seller dispatches goods; delivery is attested (simulated in the MVP; a real DP World / customs / inspection oracle in V2).
-3. **Verify & release** — On confirmation, the contract releases payment to the seller and mints the receivable token.
-4. **Instant payout** — The SME is paid immediately, atomically, on-chain.
+1. **Open.** The buyer opens an LC naming the seller and locks the funds.
+2. **Ship.** The seller ships the goods.
+3. **Confirm and settle.** Delivery is confirmed. In one transaction the contract pays the seller and mints the receivable.
 
-What takes 7–10 days today completes in about 90 seconds, with a transaction anyone can open in a block explorer.
+Anyone can open that transaction in a block explorer and check the timestamps.
 
 ## 5. Architecture
 
-| Layer | Choice (MVP) | Direction |
+| Layer | MVP (live on Amoy) | Production direction |
 | --- | --- | --- |
-| Chain | Polygon Amoy testnet | Polygon mainnet; later evaluate Polygon CDK app-chain for trade-data privacy |
-| Contracts | LC escrow + receivable token (Solidity, OpenZeppelin) | Add eBL (MLETR) transferable records |
-| Settlement asset | Native POL (testnet) | Mainnet USDC / regulated AED stablecoin |
-| Wallet / UX | Embedded email wallet, gasless | Account abstraction at scale |
-| Delivery signal | Simulated, signed attestation | Real oracle: DP World, customs, inspection |
-| Frontend | Next.js | — |
+| Chain | Polygon Amoy testnet | Polygon mainnet. Evaluate a Polygon CDK chain for trade-data privacy. |
+| Contract | One `LetterOfCredit` contract on OpenZeppelin ERC-721, no admin | Add eBL (MLETR) transferable records |
+| Settlement asset | Native POL | USDC or a regulated AED stablecoin |
+| Wallets | Privy embedded email wallets. Users pay gas in POL but see no prompt. | Sponsored gas through account abstraction |
+| Delivery signal | Seller confirms delivery | Real oracle: DP World, customs, inspection |
+| Frontend | Next.js reading the chain directly | Same |
 
-**Why Polygon:** low, predictable transaction cost at the volume implied by 15M+ TEUs; mature EVM tooling; native stablecoin liquidity; and strong enterprise/RWA adoption — with DevRel and ecosystem support from the program itself.
+Why Polygon: transaction costs stay low at port-scale volume, the EVM tooling is mature, stablecoin liquidity is there, and the Ignyte program comes with Polygon ecosystem support.
 
 ## 6. Business model
 
-- **Per-settlement fee** on each LC settled through Harbor.
-- **Financing spread** on tokenized receivables, once the capital pool (V3) is live — non-bank capital providers fund SME receivables and earn yield; SMEs get paid early. This is the direct attack on the USD 2T gap.
-- **SaaS / integration tier** for banks that want to issue compliant LCs on the rail.
+- A fee on each LC settled through Harbor.
+- A financing spread on receivables once the pool exists. Capital providers fund SME receivables for yield, and SMEs get paid early. This goes straight at the USD 2 trillion gap.
+- An integration tier for banks that want to issue LCs on Harbor.
 
-## 7. Roadmap (summary)
+## 7. Roadmap
 
-- **V1 — Win the hackathon (now → 13 Jul 2026):** the self-executing LC + instant receivable, on Amoy, with the 90-second demo. *Frozen scope.*
-- **V2 — Win Demo Day (→ Sep 2026):** real delivery oracle, eBL/MLETR, mainnet USDC, one live corridor through Jebel Ali.
-- **V3 — Scale:** receivable financing pool, on-chain trade credit scoring, then adjacent merchant payments.
+- **V1, done.** Escrow and one-transaction settlement on Amoy, with email login. Submitted to Ignyte in July 2026.
+- **V2.** A real delivery oracle, eBL under MLETR, mainnet USDC, an external audit, and one live corridor through Jebel Ali.
+- **V3.** A receivables financing pool and trade credit scoring built from settlement history.
 
-Full detail in [`roadmap.md`](roadmap.md).
+Details in [roadmap.md](roadmap.md).
 
 ## 8. Go-to-market
 
-Land one corridor through **Jebel Ali**, using DIFC's ecosystem (introductions to 289 banking institutions and 5,000+ VCs) to secure the first bank or capital partner. Prove instant settlement on a single trade lane, then widen corridor by corridor. The banks are not competitors here — they are the first customers and the source of capital.
+Start with one corridor through Jebel Ali. Use the DIFC network, which reaches 289 banking institutions and more than 5,000 VCs, to land the first bank or capital partner. Prove settlement on one trade lane, then add corridors one at a time. Banks are the first customers and the source of capital, not competitors.
 
 ## 9. Team
 
-**Mirage Systems** — two builders and one product/pitch lead. A deliberately small team executing a deliberately narrow first version.
+Mirage Systems: two engineers and one product lead.
 
-## 10. Status & disclaimers
+## 10. Status and disclaimers
 
-Harbor is at hackathon-MVP stage for the Ignyte Challenges. The MVP runs on Polygon testnet, settles in the chain's native token, and simulates the delivery oracle; these are explicitly noted as MVP simplifications with a defined path to production in the roadmap. Nothing here is financial advice or an offer of securities. Trade-finance and stablecoin activity in the UAE is regulated; production deployment will be conducted under the appropriate DIFC/CBUAE framework.
+Harbor is a testnet MVP. It runs on Polygon Amoy, settles in the chain's native token, and relies on the seller to confirm delivery. The contract has not had an external audit. Nothing here is financial advice or an offer of securities. Trade-finance and stablecoin activity in the UAE is regulated, and any production deployment will follow the DIFC and CBUAE frameworks.
